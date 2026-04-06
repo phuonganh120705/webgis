@@ -1,72 +1,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Nhà lắm chó mèo, thêm lớp nền</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<title>Số lao động trong doanh nghiệp - MSSV - Họ tên</title>
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
-  </style>
-</head>
-<body>
-
-<h3 style="text-align:center;">Nhà lắm chó mèo.js, thêm lớp nền ảnh vệ tinh</h3>
-<div id="map"></div>
-
-<!-- Leaflet JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
+<style>
+#map { height: 100vh; }
+
+.legend {
+    background: white;
+    padding: 10px;
+}
+
+.title {
+    position: absolute;
+    top: 10px;
+    left: 50px;
+    background: white;
+    padding: 8px;
+    font-weight: bold;
+    z-index: 1000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="title">
+Số lao động trong doanh nghiệp theo quận huyện Hà Nội<br>
+MSSV - Họ tên
+</div>
+
+<div id="map"></div>
+
 <script>
-  // Khởi tạo bản đồ và đặt vị trí trung tâm (tọa độ Việt Nam)
-  var map = L.map('map').setView([20.989470032335152, 105.79574580114927], 17);
 
- // Các layer nền
-  var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0','mt1','mt2','mt3'],
-    attribution: '© Google Maps'
-  });
+// Tạo bản đồ
+var map = L.map('map').setView([21.03, 105.85], 10);
 
-  var googleSatellite = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0','mt1','mt2','mt3'],
-    attribution: '© Google Satellite'
-  });
+// Nền OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
 
-  var googleTerrain = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0','mt1','mt2','mt3'],
-    attribution: '© Google Terrain'
-  });
+// Hàm phân cấp màu
+function getColor(d) {
+    return d > 10000 ? '#800026' :
+           d > 8000  ? '#BD0026' :
+           d > 6000  ? '#E31A1C' :
+           d > 4000  ? '#FC4E2A' :
+           d > 2000  ? '#FD8D3C' :
+           d > 1000  ? '#FEB24C' :
+                       '#FFEDA0';
+}
 
-  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  });
+// Style quận/huyện
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.value),
+        weight: 1,
+        color: 'white',
+        fillOpacity: 0.7
+    };
+}
 
-  // Thêm mặc định là Google Hybrid
-  osm.addTo(map);
+// Load districts
+fetch('districts.geojson')
+.then(res => res.json())
+.then(data => {
+    L.geoJSON(data, { style: style }).addTo(map);
+});
 
-    // Tạo control chuyển đổi layer nền
-  var baseMaps = {
-    "🛰️ Google Hybrid": googleHybrid,
-    "🌍 OpenStreetMap": osm,
-    "🗺️ Google Satellite": googleSatellite,
-    "⛰️ Google Terrain": googleTerrain
-  };
+// Load communes + label
+fetch('communes.geojson')
+.then(res => res.json())
+.then(data => {
+    L.geoJSON(data, {
+        onEachFeature: function (feature, layer) {
+            layer.bindTooltip(feature.properties.name, {
+                permanent: true,
+                direction: "center"
+            });
+        }
+    }).addTo(map);
+});
 
-  L.control.layers(baseMaps).addTo(map);
+// Legend góc phải trên
+var legend = L.control({position: 'topright'});
 
-  // Thêm 1 marker (ví dụ tại Hà Nội)
-  var marker = L.marker([20.989716969145746, 105.79573486594445]).addTo(map);
-  marker.bindPopup("Trường Đại học Hà Nội").openPopup();
+legend.onAdd = function () {
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [0, 1000, 2000, 4000, 6000, 8000, 10000];
+
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i]+1) +
+            '; width:10px; height:10px; display:inline-block;"></i> ' +
+            grades[i] + (grades[i + 1] ? '-' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+legend.addTo(map);
+
 </script>
 
 </body>
