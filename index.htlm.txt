@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Hanoi Map</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+#map {
+  height: 100vh;
+}
+
+/* tiêu đề */
+.title {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 10px;
+  font-weight: bold;
+  z-index: 1000;
+  text-align: center;
+}
+
+/* legend góc phải trên */
+.legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  padding: 10px;
+  z-index: 1000;
+  border: 1px solid black;
+}
+</style>
+</head>
+
+<body>
+
+<!-- TITLE -->
+<div class="title">
+Number of acting enterprises as of 31 Dec. 2022 <br>
+by size of employees and by district (Under 10 people)<br>
+2306060004 Ngô Phương Anh
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- LEGEND -->
+<div class="legend">
+<b>Legend</b><br>
+Blue: District area
+</div>
+
+<script>
+
+// 1. tạo map (tọa độ Hà Nội)
+var map = L.map('map').setView([21.03, 105.85], 11);
+
+// 2. thêm nền OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// 3. đọc file GeoJSON
+fetch('data.geojson')
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+
+    // 4. vẽ lên bản đồ
+    L.geoJSON(data, {
+      style: {
+        color: "blue",
+        weight: 2,
+        fillOpacity: 0.5
+      },
+
+      onEachFeature: function(feature, layer) {
+        // hiển thị tên quận nếu có
+        if (feature.properties) {
+          layer.bindPopup(feature.properties.name || "District");
+        }
+      }
+
+    }).addTo(map);
+
+  });
+
+</script>
+
+</body>
+</html>
